@@ -133,6 +133,8 @@ def print_summary():
 
 
 def get_status_endpoint(file_path, client, retry_pending):
+    """Returns status_endpoint, status and response (if available)
+    """
     status_endpoint = None
 
     # If retry_pending is True, check if the status API endpoint is available
@@ -157,14 +159,14 @@ def get_status_endpoint(file_path, client, retry_pending):
         logger.info(
             f"[{file_path}] Using the existing status endpoint: {status_endpoint}"
         )
-        return status_endpoint, "PENDING"
+        return status_endpoint, "PENDING", None
 
     # Fresh API call to process the file
     execution_status = "STARTING"
     update_db(file_path, execution_status, None, None, None, None)
     response = client.structure_file(file_paths=[file_path])
     logger.debug(f"[{file_path}] Response of initial API call: {response}")
-    status_endpoint = response.get("status_check_api_endpoint") # If ERROR or completef this will be None
+    status_endpoint = response.get("status_check_api_endpoint") # If ERROR or completed this will be None
     execution_status = response.get("execution_status")
     status_code = response.get("status_code")
     update_db(
@@ -175,7 +177,7 @@ def get_status_endpoint(file_path, client, retry_pending):
         status_code,
         status_endpoint,
     )
-    return status_endpoint, execution_status
+    return status_endpoint, execution_status, response
 
 
 def process_file(
@@ -209,7 +211,7 @@ def process_file(
             logging_level=global_arguments.log_level,
         )
 
-        status_endpoint, execution_status = get_status_endpoint(
+        status_endpoint, execution_status, response = get_status_endpoint(
             file_path=file_path, client=client, retry_pending=retry_pending
         )
         # Polling until status is COMPLETE or ERROR
