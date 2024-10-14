@@ -164,7 +164,7 @@ def get_status_endpoint(file_path, client, retry_pending):
     update_db(file_path, execution_status, None, None, None, None)
     response = client.structure_file(file_paths=[file_path])
     logger.debug(f"[{file_path}] Response of initial API call: {response}")
-    status_endpoint = response["status_check_api_endpoint"]
+    status_endpoint = response.get("status_check_api_endpoint") # If ERROR or completef this will be None
     execution_status = response.get("execution_status")
     status_code = response.get("status_code")
     update_db(
