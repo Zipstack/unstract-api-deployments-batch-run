@@ -424,6 +424,10 @@ def main():
     print_summary()  # Print summary at the end
     if args.print_report:
         print_report()
+        logger.warning(
+            "Elapsed time calculation of a file which was resumed"
+            " from pending state will not be correct"
+        )
 
 
 if __name__ == "__main__":
