@@ -1,19 +1,131 @@
-# Quick Start
-##  Dependencies
+# File Processing Script
 
-Install dependencies
+This script processes files in a specified directory using an API, logs results in a local SQLite database, and provides options for retrying failed or pending files. It includes features for skipping specific files, generating reports, and running multiple API calls in parallel.
+
+## Features
+
+- **Parallel Processing**: Process files in parallel, with the number of parallel calls configurable.
+- **Status Tracking**: Tracks the execution status, results, and time taken for each file in an SQLite database.
+- **Retry Logic**: Options to retry failed or pending files, or to skip them.
+- **Detailed Reporting**: Prints a summary of file processing and provides a detailed report.
+- **Polling**: Polls the API until the result is complete, with customizable intervals.
+
+## Dependencies
+
+Ensure you have the required dependencies installed:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## Run
-Use the command below to find details on using the script
-```
+## SQLite Database Schema
+
+The script uses a local SQLite database (`file_processing.db`) with the following schema:
+
+- **file_status**:
+  - `id` (INTEGER): Primary key
+  - `file_name` (TEXT): Unique name of the file
+  - `execution_status` (TEXT): Status of the file (`STARTING`, `COMPLETED`, `ERROR`, etc.)
+  - `result` (TEXT): API result in JSON format
+  - `time_taken` (REAL): Time taken to process the file
+  - `status_code` (INTEGER): API status code
+  - `status_api_endpoint` (TEXT): API endpoint for checking status
+  - `updated_at` (TEXT): Last updated timestamp
+  - `created_at` (TEXT): Creation timestamp
+
+## Command Line Arguments
+
+Run the script with the following options:
+
+```bash
 python main.py -h
 ```
 
-## Examples
-![image](https://github.com/user-attachments/assets/d36e8614-40c6-4ac0-ba7e-5a96cd3310c2)
-![image](https://github.com/user-attachments/assets/6fde010f-a5d2-4173-98e1-076f53ac6df2)
+This will display detailed usage information.
+
+### Required Arguments:
+
+- `-e`, `--api_endpoint`: API endpoint for processing files.
+- `-k`, `--api_key`: API key for authenticating API calls.
+- `-f`, `--input_folder_path`: Folder path containing the files to process.
+
+### Optional Arguments:
+
+- `-t`, `--api_timeout`: Timeout (in seconds) for API requests (default: 10).
+- `-i`, `--poll_interval`: Interval (in seconds) between API status polls (default: 5).
+- `-p`, `--parallel_call_count`: Number of parallel API calls (default: 10).
+- `--retry_failed`: Retry processing of failed files.
+- `--retry_pending`: Retry processing of pending files by making new requests.
+- `--skip_pending`: Skip processing of pending files.
+- `--skip_unprocessed`: Skip unprocessed files when retrying failed files.
+- `--log_level`: Log level (default: `INFO`).
+- `--print_report`: Print a detailed report of all processed files at the end.
+
+## Usage Examples
+
+### Basic Usage
+
+To process files in the directory `/path/to/files` using the provided API:
+
+```bash
+python main.py -e https://api.example.com/process -k your_api_key -f /path/to/files
+```
+
+### Retry Failed Files
+
+To retry files that previously encountered errors:
+
+```bash
+python main.py -e https://api.example.com/process -k your_api_key -f /path/to/files --retry_failed
+```
+
+### Skip Pending Files
+
+To skip files that are still pending:
+
+```bash
+python main.py -e https://api.example.com/process -k your_api_key -f /path/to/files --skip_pending
+```
+
+### Parallel Processing
+
+To process 20 files in parallel:
+
+```bash
+python main.py -e https://api.example.com/process -k your_api_key -f /path/to/files -p 20
+```
+
+### Print Detailed Report
+
+To generate and display a detailed report at the end of the run:
+
+```bash
+python main.py -e https://api.example.com/process -k your_api_key -f /path/to/files --print_report
+```
+
+## Database and Logging
+
+- **Database**: Results and statuses are stored in a local SQLite database (`file_processing.db`).
+- **Logging**: Logs are printed to stdout with configurable log levels (e.g., `DEBUG`, `INFO`, `ERROR`).
+
+## Example Output
+
+```
+Status 'COMPLETED': 50
+Status 'ERROR': 10
+Status 'PENDING': 5
+```
+
+For more detailed output, you can use the `--print_report` option to get a per-file breakdown.
+
+
+## Status Definitions
+
+The following statuses are tracked for each file during processing:
+
+- **STARTING**: Initial state when processing begins.
+- **EXECUTING**: File is currently being processed.
+- **PENDING**: File processing is pending or waiting for external actions.
+- **ERROR**: File processing encountered an error.
+- **COMPLETED**: File was processed successfully and will not be processed again unless forced by rerun options.
 
