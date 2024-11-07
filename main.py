@@ -34,6 +34,7 @@ class Arguments:
     skip_unprocessed: bool = False
     log_level: str = "INFO"
     print_report: bool = False
+    include_metadata: bool = False
 
 
 # Initialize SQLite DB
@@ -244,12 +245,13 @@ def process_file(
             api_key=args.api_key,
             api_timeout=args.api_timeout,
             logging_level=args.log_level,
+            include_metadata=args.include_metadata,
         )
 
         status_endpoint, execution_status, response = get_status_endpoint(
             file_path=file_path, client=client, args=args
         )
-        # Polling until status is COMPLETE or ERROR
+        # Polling until status is COMPLETED or ERROR
         while execution_status not in ["COMPLETED", "ERROR"]:
             time.sleep(args.poll_interval)
             response = client.check_execution_status(status_endpoint)
@@ -407,6 +409,13 @@ def main():
         dest="print_report",
         action="store_true",
         help="Print a detailed report of all file processed.",
+    )
+
+    parser.add_argument(
+        "--include_metadata",
+        dest="include_metadata",
+        action="store_true",
+        help="Include metadata in the result for each file.",
     )
 
     args = Arguments(**vars(parser.parse_args()))
