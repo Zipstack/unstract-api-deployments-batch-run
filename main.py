@@ -27,7 +27,7 @@ class Arguments:
     api_timeout: int = 10
     poll_interval: int = 5
     input_folder_path: str = ""
-    parallel_call_count: int = 10
+    parallel_call_count: int = 5
     retry_failed: bool = False
     retry_pending: bool = False
     skip_pending: bool = False
@@ -367,7 +367,7 @@ def main():
         "--parallel_call_count",
         dest="parallel_call_count",
         type=int,
-        default=10,
+        default=5,
         help="Number of calls to be made in parallel.",
     )
     parser.add_argument(
