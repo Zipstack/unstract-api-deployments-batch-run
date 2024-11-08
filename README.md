@@ -60,6 +60,7 @@ This will display detailed usage information.
 - `--skip_unprocessed`: Skip unprocessed files when retrying failed files.
 - `--log_level`: Log level (default: `INFO`).
 - `--print_report`: Print a detailed report of all processed files at the end.
+- `--include_metadata`: Include metadata on tokens consumed and the context passed to LLMs for prompt studio exported tools in the result for each file.
 
 ## Usage Examples
 
@@ -129,3 +130,15 @@ The following statuses are tracked for each file during processing:
 - **ERROR**: File processing encountered an error.
 - **COMPLETED**: File was processed successfully and will not be processed again unless forced by rerun options.
 
+For more about statuses : [API Docs](https://docs.unstract.com/unstract/unstract_platform/api_deployment/unstract_api_deployment_execution_api/#possible-execution-status)
+
+
+## Questions and Feedback
+
+On Slack, [join great conversations](https://join-slack.unstract.com/) around LLMs, their ecosystem and leveraging them to automate the previously unautomatable!
+
+[Unstract client](https://github.com/Zipstack/unstract-python-client): Learn more about Unstract API clint.
+
+[Unstract Cloud](https://unstract.com/): Signup and Try!.
+
+[Unstract developer documentation](https://docs.unstract.com/): Learn more about Unstract and its API.
