@@ -415,7 +415,7 @@ def main():
         "--include_metadata",
         dest="include_metadata",
         action="store_true",
-        help="Include metadata in the result for each file.",
+        help="Include metadata on tokens consumed and the context passed to LLMs for prompt studio exported tools in the result for each file.",
     )
 
     args = Arguments(**vars(parser.parse_args()))
