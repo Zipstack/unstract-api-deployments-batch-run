@@ -60,7 +60,7 @@ This will display detailed usage information.
 - `--skip_unprocessed`: Skip unprocessed files when retrying failed files.
 - `--log_level`: Log level (default: `INFO`).
 - `--print_report`: Print a detailed report of all processed files at the end.
-- `--include_metadata`: Include metadata in the result for each file.
+- `--include_metadata`: Include metadata on tokens consumed and the context passed to LLMs for prompt studio exported tools in the result for each file.
 
 ## Usage Examples
 
