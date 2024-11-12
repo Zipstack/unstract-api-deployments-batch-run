@@ -421,7 +421,7 @@ def main():
     )
 
     parser.add_argument(
-        "--no-verify",
+        "--no_verify",
         dest="verify",
         action="store_false",
         help="Disable SSL certificate verification.",
