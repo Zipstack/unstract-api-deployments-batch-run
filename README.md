@@ -61,6 +61,7 @@ This will display detailed usage information.
 - `--log_level`: Log level (default: `INFO`).
 - `--print_report`: Print a detailed report of all processed files at the end.
 - `--include_metadata`: Include metadata on tokens consumed and the context passed to LLMs for prompt studio exported tools in the result for each file.
+- `--no-verify`: Disable SSL certificate verification. (By default, SSL verification is enabled.)
 
 ## Usage Examples
 

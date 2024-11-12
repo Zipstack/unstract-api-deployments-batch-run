@@ -35,6 +35,7 @@ class Arguments:
     log_level: str = "INFO"
     print_report: bool = False
     include_metadata: bool = False
+    verify: bool = True
 
 
 # Initialize SQLite DB
@@ -246,6 +247,7 @@ def process_file(
             api_timeout=args.api_timeout,
             logging_level=args.log_level,
             include_metadata=args.include_metadata,
+            verify=args.verify,
         )
 
         status_endpoint, execution_status, response = get_status_endpoint(
@@ -418,6 +420,14 @@ def main():
         help="Include metadata on tokens consumed and the context passed to LLMs for prompt studio exported tools in the result for each file.",
     )
 
+    parser.add_argument(
+        "--no-verify",
+        dest="verify",
+        action="store_false",
+        help="Disable SSL certificate verification.",
+    )
+
+
     args = Arguments(**vars(parser.parse_args()))
 
     ch = logging.StreamHandler(sys.stdout)
@@ -441,3 +451,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
