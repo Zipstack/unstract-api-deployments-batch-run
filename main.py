@@ -15,7 +15,7 @@ from tabulate import tabulate
 from tqdm import tqdm
 from unstract.api_deployments.client import APIDeploymentsClient
 
-DB_NAME = "/home/praveen/Documents/db/demo.db"
+DB_NAME = "file_processing.db"
 global_arguments = None
 logger = logging.getLogger(__name__)
 
@@ -52,9 +52,9 @@ def init_db():
                     time_taken REAL,
                     status_code INTEGER,
                     status_api_endpoint TEXT,
-                    total_embedding_cost TEXT,
+                    total_embedding_cost REAL DEFAULT 0.0,
                     total_embedding_tokens INTEGER DEFAULT 0,
-                    total_llm_cost TEXT,
+                    total_llm_cost REAL DEFAULT 0.0,
                     total_llm_tokens INTEGER DEFAULT 0,
                     updated_at TEXT,
                     created_at TEXT
@@ -102,38 +102,14 @@ def update_db(
     status_code,
     status_api_endpoint,
 ):
-    
+
     total_embedding_cost = 0.0
     total_embedding_tokens = 0
     total_llm_cost = 0.0
     total_llm_tokens = 0
 
     if result is not None:
-        # Extract 'extraction_result' from the result
-        extraction_result = result.get("extraction_result", [])
-        
-        if extraction_result:
-            extraction_data = extraction_result[0].get("result", "")
-            
-            # If extraction_data is a string, attempt to parse it as JSON
-            if isinstance(extraction_data, str):
-                try:
-                    extraction_data = json.loads(extraction_data) if extraction_data else {}
-                except json.JSONDecodeError:
-                    extraction_data = {}
-
-            # Now we can safely access metadata, embedding_llm, and extraction_llm under the 'result'
-            metadata = extraction_data.get("metadata", {})
-            embedding_llm = metadata.get("embedding", [])
-            extraction_llm = metadata.get("extraction_llm", [])
-
-            # Calculate total cost from `cost_in_dollars` in both LLM arrays, converting to float as needed
-            total_embedding_cost += sum(float(item.get("cost_in_dollars", "0")) for item in embedding_llm)
-            total_llm_cost += sum(float(item.get("cost_in_dollars", "0")) for item in extraction_llm)
-
-            # Calculate total tokens using `embedding_tokens` for embedding and `total_tokens` for extraction
-            total_embedding_tokens += sum(item.get("embedding_tokens", 0) for item in embedding_llm)
-            total_llm_tokens += sum(item.get("total_tokens", 0) for item in extraction_llm)
+        total_embedding_cost, total_llm_cost, total_embedding_tokens, total_llm_tokens = calculate_cost_and_tokens(result)
 
     conn = sqlite3.connect(DB_NAME)
     conn.set_trace_callback(
@@ -168,6 +144,42 @@ def update_db(
     )
     conn.commit()
     conn.close()
+
+def calculate_cost_and_tokens(result):
+
+    total_embedding_cost = 0.0
+    total_embedding_tokens = 0
+    total_llm_cost = 0.0
+    total_llm_tokens = 0
+        
+    # Extract 'extraction_result' from the result
+    extraction_result = result.get("extraction_result", [])
+        
+    if extraction_result:
+        extraction_data = extraction_result[0].get("result", "")
+            
+        # If extraction_data is a string, attempt to parse it as JSON
+        if isinstance(extraction_data, str):
+            try:
+                extraction_data = json.loads(extraction_data) if extraction_data else {}
+            except json.JSONDecodeError:
+                logger.warning("Failed to decode JSON for extraction data; defaulting to empty dictionary.")
+                extraction_data = {}
+
+            # Now we can safely access metadata, embedding_llm, and extraction_llm under the 'result'
+        metadata = extraction_data.get("metadata", {})
+        embedding_llm = metadata.get("embedding", [])
+        extraction_llm = metadata.get("extraction_llm", [])
+
+        # Calculate total cost from `cost_in_dollars` in both LLM arrays, converting to float as needed
+        total_embedding_cost += sum(float(item.get("cost_in_dollars", "0")) for item in embedding_llm)
+        total_llm_cost += sum(float(item.get("cost_in_dollars", "0")) for item in extraction_llm)
+
+        # Calculate total tokens using `embedding_tokens` for embedding and `total_tokens` for extraction
+        total_embedding_tokens += sum(item.get("embedding_tokens", 0) for item in embedding_llm)
+        total_llm_tokens += sum(item.get("total_tokens", 0) for item in extraction_llm)
+        
+    return total_embedding_cost, total_llm_cost, total_embedding_tokens, total_llm_tokens
 
 
 # Print final summary with count of each status and average time using a single SQL query
