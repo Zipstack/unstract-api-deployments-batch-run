@@ -5,6 +5,7 @@ import os
 import sqlite3
 import sys
 import time
+import textwrap
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
@@ -14,7 +15,7 @@ from tabulate import tabulate
 from tqdm import tqdm
 from unstract.api_deployments.client import APIDeploymentsClient
 
-DB_NAME = "file_processing.db"
+DB_NAME = "/home/praveen/Documents/db/demo.db"
 global_arguments = None
 logger = logging.getLogger(__name__)
 
@@ -51,6 +52,10 @@ def init_db():
                     time_taken REAL,
                     status_code INTEGER,
                     status_api_endpoint TEXT,
+                    total_embedding_cost TEXT,
+                    total_embedding_tokens INTEGER DEFAULT 0,
+                    total_llm_cost TEXT,
+                    total_llm_tokens INTEGER DEFAULT 0,
                     updated_at TEXT,
                     created_at TEXT
                 )"""
@@ -97,6 +102,39 @@ def update_db(
     status_code,
     status_api_endpoint,
 ):
+    
+    total_embedding_cost = 0.0
+    total_embedding_tokens = 0
+    total_llm_cost = 0.0
+    total_llm_tokens = 0
+
+    if result is not None:
+        # Extract 'extraction_result' from the result
+        extraction_result = result.get("extraction_result", [])
+        
+        if extraction_result:
+            extraction_data = extraction_result[0].get("result", "")
+            
+            # If extraction_data is a string, attempt to parse it as JSON
+            if isinstance(extraction_data, str):
+                try:
+                    extraction_data = json.loads(extraction_data) if extraction_data else {}
+                except json.JSONDecodeError:
+                    extraction_data = {}
+
+            # Now we can safely access metadata, embedding_llm, and extraction_llm under the 'result'
+            metadata = extraction_data.get("metadata", {})
+            embedding_llm = metadata.get("embedding", [])
+            extraction_llm = metadata.get("extraction_llm", [])
+
+            # Calculate total cost from `cost_in_dollars` in both LLM arrays, converting to float as needed
+            total_embedding_cost += sum(float(item.get("cost_in_dollars", "0")) for item in embedding_llm)
+            total_llm_cost += sum(float(item.get("cost_in_dollars", "0")) for item in extraction_llm)
+
+            # Calculate total tokens using `embedding_tokens` for embedding and `total_tokens` for extraction
+            total_embedding_tokens += sum(item.get("embedding_tokens", 0) for item in embedding_llm)
+            total_llm_tokens += sum(item.get("total_tokens", 0) for item in extraction_llm)
+
     conn = sqlite3.connect(DB_NAME)
     conn.set_trace_callback(
         lambda x: (
@@ -109,9 +147,9 @@ def update_db(
     now = datetime.now().isoformat()
     c.execute(
         """
-        INSERT OR REPLACE INTO file_status (file_name, execution_status, result, time_taken, status_code, status_api_endpoint, updated_at, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM file_status WHERE file_name = ?), ?))
-    """,
+        INSERT OR REPLACE INTO file_status (file_name, execution_status, result, time_taken, status_code, status_api_endpoint, total_embedding_cost, total_embedding_tokens, total_llm_cost, total_llm_tokens, updated_at, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM file_status WHERE file_name = ?), ?))
+        """,
         (
             file_name,
             execution_status,
@@ -119,6 +157,10 @@ def update_db(
             time_taken,
             status_code,
             status_api_endpoint,
+            total_embedding_cost,
+            total_embedding_tokens,
+            total_llm_cost,
+            total_llm_tokens,
             now,
             file_name,
             now,
@@ -130,7 +172,7 @@ def update_db(
 
 # Print final summary with count of each status and average time using a single SQL query
 def print_summary():
-    conn = sqlite3.connect("file_processing.db")
+    conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
 
     # Fetch count and average time for each status
@@ -153,13 +195,13 @@ def print_summary():
 
 
 def print_report():
-    conn = sqlite3.connect("file_processing.db")
+    conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
 
-    # Fetch count and average time for each status
+    # Fetch required fields, including total_cost and total_tokens
     c.execute(
         """
-        SELECT file_name, execution_status, time_taken
+        SELECT file_name, execution_status, time_taken, total_embedding_cost, total_embedding_tokens, total_llm_cost, total_llm_tokens
         FROM file_status
     """
     )
@@ -170,8 +212,18 @@ def print_report():
     print("\nDetailed Report:")
     if report_data:
         # Tabulate the data with column headers
-        headers = ["File Name", "Execution Status", "Time Elapsed (seconds)"]
-        print(tabulate(report_data, headers=headers, tablefmt="pretty"))
+        headers = ["File Name", "Execution Status", "Time Elapsed (seconds)", "Total Embedding Cost", "Total Embedding Tokens", "Total LLM Cost", "Total LLM Tokens"]
+
+        # Wrap text in each column to a specific width (e.g., 30 characters for file names and 20 for others)
+        formatted_data = []
+        for row in report_data:
+            formatted_row = [
+                textwrap.fill(str(cell), width=30) if isinstance(cell, str) else f"{cell:.8f}" if isinstance(cell, float) else cell
+                for cell in row
+            ]
+            formatted_data.append(formatted_row)
+
+        print(tabulate(formatted_data, headers=headers, tablefmt="pretty"))
     else:
         print("No records found in the database.")
 
