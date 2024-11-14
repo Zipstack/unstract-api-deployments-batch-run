@@ -15,7 +15,7 @@ from tabulate import tabulate
 from tqdm import tqdm
 from unstract.api_deployments.client import APIDeploymentsClient
 
-DB_NAME = "/home/praveen/Documents/db/demo.db"
+DB_NAME = "file_processing.db"
 global_arguments = None
 logger = logging.getLogger(__name__)
 
