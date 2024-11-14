@@ -15,7 +15,7 @@ from tabulate import tabulate
 from tqdm import tqdm
 from unstract.api_deployments.client import APIDeploymentsClient
 
-DB_NAME = "file_processing.db"
+DB_NAME = "/home/praveen/Documents/db/demo.db"
 global_arguments = None
 logger = logging.getLogger(__name__)
 
@@ -145,6 +145,7 @@ def update_db(
     conn.commit()
     conn.close()
 
+# Calculate total cost and tokens for detailed report
 def calculate_cost_and_tokens(result):
 
     total_embedding_cost = 0.0
@@ -157,7 +158,7 @@ def calculate_cost_and_tokens(result):
         
     if extraction_result:
         extraction_data = extraction_result[0].get("result", "")
-            
+     
         # If extraction_data is a string, attempt to parse it as JSON
         if isinstance(extraction_data, str):
             try:
@@ -166,16 +167,16 @@ def calculate_cost_and_tokens(result):
                 logger.warning("Failed to decode JSON for extraction data; defaulting to empty dictionary.")
                 extraction_data = {}
 
-            # Now we can safely access metadata, embedding_llm, and extraction_llm under the 'result'
+       
         metadata = extraction_data.get("metadata", {})
         embedding_llm = metadata.get("embedding", [])
         extraction_llm = metadata.get("extraction_llm", [])
 
-        # Calculate total cost from `cost_in_dollars` in both LLM arrays, converting to float as needed
+        # Calculate total cost
         total_embedding_cost += sum(float(item.get("cost_in_dollars", "0")) for item in embedding_llm)
         total_llm_cost += sum(float(item.get("cost_in_dollars", "0")) for item in extraction_llm)
 
-        # Calculate total tokens using `embedding_tokens` for embedding and `total_tokens` for extraction
+        # Calculate total tokens
         total_embedding_tokens += sum(item.get("embedding_tokens", 0) for item in embedding_llm)
         total_llm_tokens += sum(item.get("total_tokens", 0) for item in extraction_llm)
         
