@@ -156,29 +156,31 @@ def calculate_cost_and_tokens(result):
     # Extract 'extraction_result' from the result
     extraction_result = result.get("extraction_result", [])
         
-    if extraction_result:
-        extraction_data = extraction_result[0].get("result", "")
-     
-        # If extraction_data is a string, attempt to parse it as JSON
-        if isinstance(extraction_data, str):
-            try:
-                extraction_data = json.loads(extraction_data) if extraction_data else {}
-            except json.JSONDecodeError:
-                logger.warning("Failed to decode JSON for extraction data; defaulting to empty dictionary.")
-                extraction_data = {}
+    if not extraction_result:
+        return total_embedding_cost, total_llm_cost, total_embedding_tokens, total_llm_tokens
+        
+    extraction_data = extraction_result[0].get("result", "")
+    
+    # If extraction_data is a string, attempt to parse it as JSON
+    if isinstance(extraction_data, str):
+        try:
+            extraction_data = json.loads(extraction_data) if extraction_data else {}
+        except json.JSONDecodeError:
+            logger.warning("Failed to decode JSON for extraction data; defaulting to empty dictionary.")
+            extraction_data = {}
 
-       
-        metadata = extraction_data.get("metadata", {})
-        embedding_llm = metadata.get("embedding", [])
-        extraction_llm = metadata.get("extraction_llm", [])
+    
+    metadata = extraction_data.get("metadata", {})
+    embedding_llm = metadata.get("embedding", [])
+    extraction_llm = metadata.get("extraction_llm", [])
 
-        # Calculate total cost
-        total_embedding_cost += sum(float(item.get("cost_in_dollars", "0")) for item in embedding_llm)
-        total_llm_cost += sum(float(item.get("cost_in_dollars", "0")) for item in extraction_llm)
+    # Calculate total cost
+    total_embedding_cost += sum(float(item.get("cost_in_dollars", "0")) for item in embedding_llm)
+    total_llm_cost += sum(float(item.get("cost_in_dollars", "0")) for item in extraction_llm)
 
-        # Calculate total tokens
-        total_embedding_tokens += sum(item.get("embedding_tokens", 0) for item in embedding_llm)
-        total_llm_tokens += sum(item.get("total_tokens", 0) for item in extraction_llm)
+    # Calculate total tokens
+    total_embedding_tokens += sum(item.get("embedding_tokens", 0) for item in embedding_llm)
+    total_llm_tokens += sum(item.get("total_tokens", 0) for item in extraction_llm)
         
     return total_embedding_cost, total_llm_cost, total_embedding_tokens, total_llm_tokens
 
