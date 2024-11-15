@@ -157,7 +157,7 @@ def calculate_cost_and_tokens(result):
     extraction_result = result.get("extraction_result", [])
         
     if not extraction_result:
-        return None, None, None, None
+        return total_embedding_cost, total_llm_cost, total_embedding_tokens, total_llm_tokens
         
     extraction_data = extraction_result[0].get("result", "")
     
@@ -175,7 +175,7 @@ def calculate_cost_and_tokens(result):
     extraction_llm = metadata.get("extraction_llm") if metadata else None
 
     #Process embedding costs and tokens if embedding_llm list exists and is not empty
-    if embedding_llm and not []:
+    if embedding_llm:
         total_embedding_cost = 0.0
         total_embedding_tokens = 0
         for item in embedding_llm:
@@ -183,7 +183,7 @@ def calculate_cost_and_tokens(result):
             total_embedding_tokens += item.get("embedding_tokens", 0)
 
     #Process embedding costs and tokens if extraction_llm list exists and is not empty
-    if extraction_llm and not []:
+    if extraction_llm:
         total_llm_cost = 0.0
         total_llm_tokens = 0
         for item in extraction_llm:
