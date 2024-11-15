@@ -52,10 +52,10 @@ def init_db():
                     time_taken REAL,
                     status_code INTEGER,
                     status_api_endpoint TEXT,
-                    total_embedding_cost REAL DEFAULT 0.0,
-                    total_embedding_tokens INTEGER DEFAULT 0,
-                    total_llm_cost REAL DEFAULT 0.0,
-                    total_llm_tokens INTEGER DEFAULT 0,
+                    total_embedding_cost REAL,
+                    total_embedding_tokens INTEGER,
+                    total_llm_cost REAL,
+                    total_llm_tokens INTEGER,
                     updated_at TEXT,
                     created_at TEXT
                 )"""
@@ -103,10 +103,10 @@ def update_db(
     status_api_endpoint,
 ):
 
-    total_embedding_cost = 0.0
-    total_embedding_tokens = 0
-    total_llm_cost = 0.0
-    total_llm_tokens = 0
+    total_embedding_cost = None
+    total_embedding_tokens = None
+    total_llm_cost = None
+    total_llm_tokens = None
 
     if result is not None:
         total_embedding_cost, total_llm_cost, total_embedding_tokens, total_llm_tokens = calculate_cost_and_tokens(result)
@@ -148,16 +148,16 @@ def update_db(
 # Calculate total cost and tokens for detailed report
 def calculate_cost_and_tokens(result):
 
-    total_embedding_cost = 0.0
-    total_embedding_tokens = 0
-    total_llm_cost = 0.0
-    total_llm_tokens = 0
+    total_embedding_cost = None
+    total_embedding_tokens = None
+    total_llm_cost = None
+    total_llm_tokens = None
         
     # Extract 'extraction_result' from the result
     extraction_result = result.get("extraction_result", [])
         
     if not extraction_result:
-        return total_embedding_cost, total_llm_cost, total_embedding_tokens, total_llm_tokens
+        return None, None, None, None
         
     extraction_data = extraction_result[0].get("result", "")
     
@@ -170,17 +170,25 @@ def calculate_cost_and_tokens(result):
             extraction_data = {}
 
     
-    metadata = extraction_data.get("metadata", {})
-    embedding_llm = metadata.get("embedding", [])
-    extraction_llm = metadata.get("extraction_llm", [])
+    metadata = extraction_data.get("metadata", None)
+    embedding_llm = metadata.get("embedding") if metadata else None
+    extraction_llm = metadata.get("extraction_llm") if metadata else None
 
-    # Calculate total cost
-    total_embedding_cost += sum(float(item.get("cost_in_dollars", "0")) for item in embedding_llm)
-    total_llm_cost += sum(float(item.get("cost_in_dollars", "0")) for item in extraction_llm)
+    #Process embedding costs and tokens if embedding_llm list exists and is not empty
+    if embedding_llm and not []:
+        total_embedding_cost = 0.0
+        total_embedding_tokens = 0
+        for item in embedding_llm:
+            total_embedding_cost += float(item.get("cost_in_dollars", "0"))
+            total_embedding_tokens += item.get("embedding_tokens", 0)
 
-    # Calculate total tokens
-    total_embedding_tokens += sum(item.get("embedding_tokens", 0) for item in embedding_llm)
-    total_llm_tokens += sum(item.get("total_tokens", 0) for item in extraction_llm)
+    #Process embedding costs and tokens if extraction_llm list exists and is not empty
+    if extraction_llm and not []:
+        total_llm_cost = 0.0
+        total_llm_tokens = 0
+        for item in extraction_llm:
+            total_llm_cost += float(item.get("cost_in_dollars", "0"))
+            total_llm_tokens += item.get("total_tokens", 0)
         
     return total_embedding_cost, total_llm_cost, total_embedding_tokens, total_llm_tokens
 
@@ -229,11 +237,13 @@ def print_report():
         # Tabulate the data with column headers
         headers = ["File Name", "Execution Status", "Time Elapsed (seconds)", "Total Embedding Cost", "Total Embedding Tokens", "Total LLM Cost", "Total LLM Tokens"]
 
-        # Wrap text in each column to a specific width (e.g., 30 characters for file names and 20 for others)
+        # Wrap text in each column to a specific width (e.g., 30 characters for file names and 20 for others) and return None if the value is NULL
         formatted_data = []
         for row in report_data:
             formatted_row = [
-                textwrap.fill(str(cell), width=30) if isinstance(cell, str) else f"{cell:.8f}" if isinstance(cell, float) else cell
+                "None" if cell is None else
+                textwrap.fill(str(cell), width=30) if isinstance(cell, str) else 
+                f"{cell:.8f}" if isinstance(cell, float) else cell
                 for cell in row
             ]
             formatted_data.append(formatted_row)
