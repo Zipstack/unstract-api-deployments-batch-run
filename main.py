@@ -43,26 +43,58 @@ class Arguments:
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
+
+    # Check if the table already exists
     c.execute(
-        """CREATE TABLE IF NOT EXISTS file_status (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    file_name TEXT UNIQUE,
-                    execution_status TEXT,
-                    result TEXT,
-                    time_taken REAL,
-                    status_code INTEGER,
-                    status_api_endpoint TEXT,
-                    total_embedding_cost REAL,
-                    total_embedding_tokens INTEGER,
-                    total_llm_cost REAL,
-                    total_llm_tokens INTEGER,
-                    updated_at TEXT,
-                    created_at TEXT
-                )"""
+        """SELECT name FROM sqlite_master WHERE type='table' AND name='file_status'"""
     )
+    table_exists = c.fetchone() is not None
+
+    # If the table doesn't exist, create it with all columns and skip further checks
+    if not table_exists:
+        c.execute(
+            """CREATE TABLE file_status (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        file_name TEXT UNIQUE,
+                        execution_status TEXT,
+                        result TEXT,
+                        time_taken REAL,
+                        status_code INTEGER,
+                        status_api_endpoint TEXT,
+                        total_embedding_cost REAL,
+                        total_embedding_tokens INTEGER,
+                        total_llm_cost REAL,
+                        total_llm_tokens INTEGER,
+                        updated_at TEXT,
+                        created_at TEXT
+                    )"""
+        )
+
+        conn.commit()
+        conn.close()
+
+        return
+    
+    # Check existing columns in the table
+    c.execute("PRAGMA table_info(file_status)")
+    existing_columns = {row[1] for row in c.fetchall()}
+
+    # Columns to be added
+    new_columns = {
+        "total_embedding_cost": "REAL",
+        "total_embedding_tokens": "INTEGER",
+        "total_llm_cost": "REAL",
+        "total_llm_tokens": "INTEGER",
+    }
+    # Add missing columns
+    for column, col_type in new_columns.items():
+        if column not in existing_columns:
+            c.execute(f"ALTER TABLE file_status ADD COLUMN {column} {col_type}")
+        else:
+            break
+
     conn.commit()
     conn.close()
-
 
 # Check if the file is already processed
 def skip_file_processing(file_name, args: Arguments):
