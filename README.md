@@ -64,7 +64,7 @@ This will display detailed usage information.
 - `--skip_unprocessed`: Skip unprocessed files when retrying failed files.
 - `--log_level`: Log level (default: `INFO`).
 - `--print_report`: Print a detailed report of all processed files at the end.
-- `--exclude_metadata`: exclude metadata on tokens consumed and the context passed to LLMs for prompt studio exported tools in the result for each file.
+- `--exclude_metadata`: Exclude metadata on tokens consumed and the context passed to LLMs for prompt studio exported tools in the result for each file.
 - `--no_verify`: Disable SSL certificate verification. (By default, SSL verification is enabled.)
 
 ## Usage Examples
