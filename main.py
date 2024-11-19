@@ -35,7 +35,7 @@ class Arguments:
     skip_unprocessed: bool = False
     log_level: str = "INFO"
     print_report: bool = False
-    include_metadata: bool = False
+    include_metadata: bool = True
     verify: bool = True
 
 
@@ -510,10 +510,10 @@ def main():
     )
 
     parser.add_argument(
-        "--include_metadata",
+        "--exclude_metadata",
         dest="include_metadata",
-        action="store_true",
-        help="Include metadata on tokens consumed and the context passed to LLMs for prompt studio exported tools in the result for each file.",
+        action="store_false",
+        help="Exclude metadata on tokens consumed and the context passed to LLMs for prompt studio exported tools in the result for each file.",
     )
 
     parser.add_argument(

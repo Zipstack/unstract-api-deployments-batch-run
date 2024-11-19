@@ -30,6 +30,10 @@ The script uses a local SQLite database (`file_processing.db`) with the followin
   - `time_taken` (REAL): Time taken to process the file
   - `status_code` (INTEGER): API status code
   - `status_api_endpoint` (TEXT): API endpoint for checking status
+  - `total_embedding_cost` (REAL): Total cost incurred for embeddings.
+  - `total_embedding_tokens` (INTEGER): Total tokens used for embeddings.
+  - `total_llm_cost` (REAL): Total cost incurred for LLM operations.
+  - `total_llm_tokens` (INTEGER): Total tokens used for LLM operations.
   - `updated_at` (TEXT): Last updated timestamp
   - `created_at` (TEXT): Creation timestamp
 
@@ -60,7 +64,7 @@ This will display detailed usage information.
 - `--skip_unprocessed`: Skip unprocessed files when retrying failed files.
 - `--log_level`: Log level (default: `INFO`).
 - `--print_report`: Print a detailed report of all processed files at the end.
-- `--include_metadata`: Include metadata on tokens consumed and the context passed to LLMs for prompt studio exported tools in the result for each file.
+- `--exclude_metadata`: Exclude metadata on tokens consumed and the context passed to LLMs for prompt studio exported tools in the result for each file.
 - `--no_verify`: Disable SSL certificate verification. (By default, SSL verification is enabled.)
 
 ## Usage Examples
