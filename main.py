@@ -43,6 +43,8 @@ class Arguments:
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
+
+    # Create the table if it doesn't exist
     c.execute(
         """CREATE TABLE IF NOT EXISTS file_status (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -60,9 +62,26 @@ def init_db():
                     created_at TEXT
                 )"""
     )
+
+    # Check existing columns in file_status table
+    c.execute("PRAGMA table_info(file_status)")
+    existing_columns = {row[1] for row in c.fetchall()}
+
+    # Columns to add
+    new_columns = {
+        "total_embedding_cost": "REAL",
+        "total_embedding_tokens": "INTEGER",
+        "total_llm_cost": "REAL",
+        "total_llm_tokens": "INTEGER",
+    }
+
+    # Add missing columns
+    for column, col_type in new_columns.items():
+        if column not in existing_columns:
+            c.execute(f"ALTER TABLE file_status ADD COLUMN {column} {col_type}")
+
     conn.commit()
     conn.close()
-
 
 # Check if the file is already processed
 def skip_file_processing(file_name, args: Arguments):
