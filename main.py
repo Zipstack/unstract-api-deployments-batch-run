@@ -135,7 +135,7 @@ def update_db(
     if result is not None:
         total_embedding_cost, total_llm_cost, total_embedding_tokens, total_llm_tokens = calculate_cost_and_tokens(result)
 
-    if execution_status is "ERROR":
+    if execution_status == "ERROR":
         error_message = extract_error_message(result)
 
     conn = sqlite3.connect(DB_NAME)
