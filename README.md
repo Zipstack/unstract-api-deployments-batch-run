@@ -34,6 +34,7 @@ The script uses a local SQLite database (`file_processing.db`) with the followin
   - `total_embedding_tokens` (INTEGER): Total tokens used for embeddings.
   - `total_llm_cost` (REAL): Total cost incurred for LLM operations.
   - `total_llm_tokens` (INTEGER): Total tokens used for LLM operations.
+  - `error_message` (TEXT): Details of errors if `execution_status` is `ERROR`; otherwise NULL.
   - `updated_at` (TEXT): Last updated timestamp
   - `created_at` (TEXT): Creation timestamp
 
@@ -66,6 +67,7 @@ This will display detailed usage information.
 - `--print_report`: Print a detailed report of all processed files at the end.
 - `--exclude_metadata`: Exclude metadata on tokens consumed and the context passed to LLMs for prompt studio exported tools in the result for each file.
 - `--no_verify`: Disable SSL certificate verification. (By default, SSL verification is enabled.)
+- `--csv_report`: Path to export the detailed report as a CSV file.
 
 ## Usage Examples
 
