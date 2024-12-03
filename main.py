@@ -222,15 +222,14 @@ def calculate_cost_and_tokens(result):
 
 # Exract error message from the result JSON
 def extract_error_message(result):
-    result_data = json.loads(result)
     # Check for error in extraction_result
-    extraction_result = result_data.get("extraction_result", [])
+    extraction_result = result.get("extraction_result", [])
     if extraction_result and isinstance(extraction_result, list):
         for item in extraction_result:
             if "error" in item and item["error"]:
                 return item["error"]
     # Fallback to the parent error
-    return result_data.get("error", "No error message found")
+    return result.get("error", "No error message found")
 
 # Print final summary with count of each status and average time using a single SQL query
 def print_summary():
@@ -263,7 +262,7 @@ def print_report():
     # Fetch required fields, including total_cost and total_tokens
     c.execute(
         """
-        SELECT file_name, execution_status, time_taken, total_embedding_cost, total_embedding_tokens, total_llm_cost, total_llm_tokens, error_message
+        SELECT file_name, execution_status, time_taken, total_embedding_cost, total_embedding_tokens, total_llm_cost, total_llm_tokens
         FROM file_status
     """
     )
@@ -284,7 +283,6 @@ def print_report():
                 "Total Embedding Tokens", 
                 "Total LLM Cost", 
                 "Total LLM Tokens",
-                "Error Message"
             ]
         ]
 
@@ -303,6 +301,9 @@ def print_report():
         print(tabulate(formatted_data, headers=headers, tablefmt="pretty"))
     else:
         print("No records found in the database.")
+
+    # Suggest CSV report for error details
+    print("\nNote: Use the `--export_csv` argument to generate a CSV report that includes error messages.")
 
 def export_report_to_csv(output_path):
     conn = sqlite3.connect(DB_NAME)
