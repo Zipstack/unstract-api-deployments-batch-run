@@ -222,15 +222,14 @@ def calculate_cost_and_tokens(result):
 
 # Exract error message from the result JSON
 def extract_error_message(result):
-    result_data = json.loads(result)
     # Check for error in extraction_result
-    extraction_result = result_data.get("extraction_result", [])
+    extraction_result = result.get("extraction_result", [])
     if extraction_result and isinstance(extraction_result, list):
         for item in extraction_result:
             if "error" in item and item["error"]:
                 return item["error"]
     # Fallback to the parent error
-    return result_data.get("error", "No error message found")
+    return result.get("error", "No error message found")
 
 # Print final summary with count of each status and average time using a single SQL query
 def print_summary():
@@ -275,34 +274,49 @@ def print_report():
     if report_data:
         # Tabulate the data with column headers
         headers = [
-            textwrap.fill(header, width=20) 
-            for header in [
-                "File Name", 
-                "Execution Status", 
-                "Time Elapsed (seconds)", 
-                "Total Embedding Cost", 
-                "Total Embedding Tokens", 
-                "Total LLM Cost", 
-                "Total LLM Tokens",
-                "Error Message"
-            ]
+            "File Name", 
+            "Execution Status", 
+            "Time Elapsed (seconds)", 
+            "Total Embedding Cost", 
+            "Total Embedding Tokens", 
+            "Total LLM Cost", 
+            "Total LLM Tokens", 
+            "Error Message"
         ]
-
+        
+        column_widths = {
+            "File Name": 30,
+            "Execution Status": 20,
+            "Time Elapsed (seconds)": 20,
+            "Total Embedding Cost": 20,
+            "Total Embedding Tokens": 20,
+            "Total LLM Cost": 20,
+            "Total LLM Tokens": 20,
+            "Error Message": 30,
+        }
 
         formatted_data = []
-        # Wrap text in each column to a specific width (e.g., 30 characters for file names and 20 for others) and return None if the value is NULL
+        # Format and wrap each row's data to match column widths
         for row in report_data:
-            formatted_row = [
-                "None" if cell is None else
-                textwrap.fill(str(cell), width=30) if isinstance(cell, str) else
-                cell if idx == 2 else f"{cell:.8f}" if isinstance(cell, float) else cell
-                for idx, cell in enumerate(row)
-        ]
-        formatted_data.append(formatted_row)
+            formatted_row = []
+            for idx, cell in enumerate(row):
+                header = headers[idx]
+                width = column_widths[header]
+                cell_value = "None" if cell is None else str(cell)
+                if header == "Error Message" and len(cell_value) > 50:
+                    # Truncate long error messages
+                    cell_value = textwrap.fill(cell_value[:100], width=width) + "..."
+                else:
+                    cell_value = textwrap.fill(cell_value, width=width)
+                formatted_row.append(cell_value)
+            formatted_data.append(formatted_row)
 
+        # Print the table
         print(tabulate(formatted_data, headers=headers, tablefmt="pretty"))
     else:
         print("No records found in the database.")
+        
+    print("\nNote: For more detailed error messages, use the CSV report argument.")
 
 def export_report_to_csv(output_path):
     conn = sqlite3.connect(DB_NAME)
