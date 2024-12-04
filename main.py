@@ -262,7 +262,7 @@ def print_report():
     # Fetch required fields, including total_cost and total_tokens
     c.execute(
         """
-        SELECT file_name, execution_status, time_taken, total_embedding_cost, total_embedding_tokens, total_llm_cost, total_llm_tokens
+        SELECT file_name, execution_status, time_taken, total_embedding_cost, total_embedding_tokens, total_llm_cost, total_llm_tokens, error_message
         FROM file_status
     """
     )
@@ -274,36 +274,49 @@ def print_report():
     if report_data:
         # Tabulate the data with column headers
         headers = [
-            textwrap.fill(header, width=20) 
-            for header in [
-                "File Name", 
-                "Execution Status", 
-                "Time Elapsed (seconds)", 
-                "Total Embedding Cost", 
-                "Total Embedding Tokens", 
-                "Total LLM Cost", 
-                "Total LLM Tokens",
-            ]
+            "File Name", 
+            "Execution Status", 
+            "Time Elapsed (seconds)", 
+            "Total Embedding Cost", 
+            "Total Embedding Tokens", 
+            "Total LLM Cost", 
+            "Total LLM Tokens", 
+            "Error Message"
         ]
-
+        
+        column_widths = {
+            "File Name": 30,
+            "Execution Status": 20,
+            "Time Elapsed (seconds)": 20,
+            "Total Embedding Cost": 20,
+            "Total Embedding Tokens": 20,
+            "Total LLM Cost": 20,
+            "Total LLM Tokens": 20,
+            "Error Message": 30,
+        }
 
         formatted_data = []
-        # Wrap text in each column to a specific width (e.g., 30 characters for file names and 20 for others) and return None if the value is NULL
+        # Format and wrap each row's data to match column widths
         for row in report_data:
-            formatted_row = [
-                "None" if cell is None else
-                textwrap.fill(str(cell), width=30) if isinstance(cell, str) else
-                cell if idx == 2 else f"{cell:.8f}" if isinstance(cell, float) else cell
-                for idx, cell in enumerate(row)
-        ]
-        formatted_data.append(formatted_row)
+            formatted_row = []
+            for idx, cell in enumerate(row):
+                header = headers[idx]
+                width = column_widths[header]
+                cell_value = "None" if cell is None else str(cell)
+                if header == "Error Message" and len(cell_value) > 50:
+                    # Truncate long error messages
+                    cell_value = textwrap.fill(cell_value[:100], width=width) + "..."
+                else:
+                    cell_value = textwrap.fill(cell_value, width=width)
+                formatted_row.append(cell_value)
+            formatted_data.append(formatted_row)
 
+        # Print the table
         print(tabulate(formatted_data, headers=headers, tablefmt="pretty"))
     else:
         print("No records found in the database.")
-
-    # Suggest CSV report for error details
-    print("\nNote: Use the `--export_csv` argument to generate a CSV report that includes error messages.")
+        
+    print("\nNote: For more detailed error messages, use the CSV report argument.")
 
 def export_report_to_csv(output_path):
     conn = sqlite3.connect(DB_NAME)
