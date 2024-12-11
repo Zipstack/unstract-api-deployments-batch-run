@@ -16,8 +16,6 @@ from tabulate import tabulate
 from tqdm import tqdm
 from unstract.api_deployments.client import APIDeploymentsClient
 
-DB_NAME = "file_processing.db"
-global_arguments = None
 logger = logging.getLogger(__name__)
 
 
@@ -29,6 +27,7 @@ class Arguments:
     api_timeout: int = 10
     poll_interval: int = 5
     input_folder_path: str = ""
+    db_path: str = ""
     parallel_call_count: int = 5
     retry_failed: bool = False
     retry_pending: bool = False
@@ -42,8 +41,8 @@ class Arguments:
 
 
 # Initialize SQLite DB
-def init_db():
-    conn = sqlite3.connect(DB_NAME)
+def init_db(args: Arguments):
+    conn = sqlite3.connect(args.db_path)
     c = conn.cursor()
 
     # Create the table if it doesn't exist
@@ -89,7 +88,7 @@ def init_db():
 
 # Check if the file is already processed
 def skip_file_processing(file_name, args: Arguments):
-    conn = sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect(args.db_path)
     c = conn.cursor()
     c.execute(
         "SELECT execution_status FROM file_status WHERE file_name = ?", (file_name,)
@@ -124,6 +123,7 @@ def update_db(
     time_taken,
     status_code,
     status_api_endpoint,
+    args: Arguments
 ):
 
     total_embedding_cost = None
@@ -138,7 +138,7 @@ def update_db(
     if execution_status == "ERROR":
         error_message = extract_error_message(result)
 
-    conn = sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect(args.db_path)
     conn.set_trace_callback(
         lambda x: (
             logger.debug(f"[{file_name}] Executing statement: {x}")
@@ -232,8 +232,8 @@ def extract_error_message(result):
     return result.get("error", "No error message found")
 
 # Print final summary with count of each status and average time using a single SQL query
-def print_summary():
-    conn = sqlite3.connect(DB_NAME)
+def print_summary(args: Arguments):
+    conn = sqlite3.connect(args.db_path)
     c = conn.cursor()
 
     # Fetch count and average time for each status
@@ -255,8 +255,8 @@ def print_summary():
         print(f"Status '{status}': {count}")
 
 
-def print_report():
-    conn = sqlite3.connect(DB_NAME)
+def print_report(args: Arguments):
+    conn = sqlite3.connect(args.db_path)
     c = conn.cursor()
 
     # Fetch required fields, including total_cost and total_tokens
@@ -318,13 +318,13 @@ def print_report():
         
     print("\nNote: For more detailed error messages, use the CSV report argument.")
 
-def export_report_to_csv(output_path):
-    conn = sqlite3.connect(DB_NAME)
+def export_report_to_csv(args: Arguments):
+    conn = sqlite3.connect(args.db_path)
     c = conn.cursor()
 
     c.execute(
         """
-        SELECT file_name, execution_status, time_taken, total_embedding_cost, total_embedding_tokens, total_llm_cost, total_llm_tokens, error_message
+        SELECT file_name, execution_status, result, time_taken, total_embedding_cost, total_embedding_tokens, total_llm_cost, total_llm_tokens, error_message
         FROM file_status
         """
     )
@@ -332,22 +332,22 @@ def export_report_to_csv(output_path):
     conn.close()
 
     if not report_data:
-        print("No data available to export.")
+        print("No data available to export as CSV.")
         return
 
     # Define the headers
     headers = [
-        "File Name", "Execution Status", "Time Elapsed (seconds)",
+        "File Name", "Execution Status", "Result", "Time Elapsed (seconds)",
         "Total Embedding Cost", "Total Embedding Tokens",
         "Total LLM Cost", "Total LLM Tokens", "Error Message"
     ]
 
     try:
-        with open(output_path, 'w', newline='') as csvfile:
+        with open(args.csv_report, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(headers)  # Write headers
             writer.writerows(report_data)  # Write data rows
-        print(f"CSV successfully exported to {output_path}")
+        print(f"CSV successfully exported to '{args.csv_report}'")
     except Exception as e:
         print(f"Error exporting to CSV: {e}")
 
@@ -357,7 +357,7 @@ def get_status_endpoint(file_path, client, args: Arguments):
     status_endpoint = None
 
     # If retry_pending is True, check if the status API endpoint is available
-    conn = sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect(args.db_path)
     c = conn.cursor()
     c.execute(
         "SELECT status_api_endpoint FROM file_status WHERE file_name = ? AND execution_status NOT IN ('COMPLETED', 'ERROR')",
@@ -382,7 +382,7 @@ def get_status_endpoint(file_path, client, args: Arguments):
 
     # Fresh API call to process the file
     execution_status = "STARTING"
-    update_db(file_path, execution_status, None, None, None, None)
+    update_db(file_path, execution_status, None, None, None, None, args=args)
     response = client.structure_file(file_paths=[file_path])
     logger.debug(f"[{file_path}] Response of initial API call: {response}")
     status_endpoint = response.get(
@@ -397,6 +397,7 @@ def get_status_endpoint(file_path, client, args: Arguments):
         None,
         status_code,
         status_endpoint,
+        args=args
     )
     return status_endpoint, execution_status, response
 
@@ -436,7 +437,7 @@ def process_file(
             execution_status = response.get("execution_status")
             status_code = response.get("status_code")  # Default to 200 if not provided
             update_db(
-                file_path, execution_status, None, None, status_code, status_endpoint
+                file_path, execution_status, None, None, status_code, status_endpoint, args=args
             )
 
         result = response
@@ -456,7 +457,7 @@ def process_file(
     end_time = time.time()
     time_taken = round(end_time - start_time, 2)
     update_db(
-        file_path, execution_status, result, time_taken, status_code, status_endpoint
+        file_path, execution_status, result, time_taken, status_code, status_endpoint, args=args
     )
     logger.info(f"[{file_path}]: Processing completed: {execution_status}")
 
@@ -551,6 +552,19 @@ def main():
         help="Number of calls to be made in parallel.",
     )
     parser.add_argument(
+        "--db_path",
+        dest="db_path",
+        type=str,
+        default="file_processing.db",
+        help="Path where the SQlite DB file is stored, defaults to './file_processing.db'",
+    )
+    parser.add_argument(
+        '--csv_report',
+        dest="csv_report",
+        type=str,
+        help='Path to export the detailed report as a CSV file',
+    )
+    parser.add_argument(
         "--retry_failed",
         dest="retry_failed",
         action="store_true",
@@ -588,14 +602,12 @@ def main():
         action="store_true",
         help="Print a detailed report of all file processed.",
     )
-
     parser.add_argument(
         "--exclude_metadata",
         dest="include_metadata",
         action="store_false",
         help="Exclude metadata on tokens consumed and the context passed to LLMs for prompt studio exported tools in the result for each file.",
     )
-
     parser.add_argument(
         "--no_verify",
         dest="verify",
@@ -603,35 +615,32 @@ def main():
         help="Disable SSL certificate verification.",
     )
 
-    parser.add_argument(
-        '--csv_report',
-        dest="csv_report",
-        type=str,
-        help='Path to export the detailed report as a CSV file',
-    )
-
     args = Arguments(**vars(parser.parse_args()))
 
     ch = logging.StreamHandler(sys.stdout)
     ch.setLevel(args.log_level)
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+    ch.setFormatter(formatter)
     logging.basicConfig(level=args.log_level, handlers=[ch])
 
     logger.warning(f"Running with params: {args}")
 
-    init_db()  # Initialize DB
+    init_db(args=args)  # Initialize DB
 
     load_folder(args=args)
 
-    print_summary()  # Print summary at the end
+    print_summary(args=args)  # Print summary at the end
     if args.print_report:
-        print_report()
+        print_report(args=args)
         logger.warning(
             "Elapsed time calculation of a file which was resumed"
             " from pending state will not be correct"
         )
     
     if args.csv_report:
-        export_report_to_csv(args.csv_report)
+        export_report_to_csv(args=args)
 
 
 if __name__ == "__main__":

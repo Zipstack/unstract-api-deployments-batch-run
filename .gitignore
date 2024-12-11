@@ -1,2 +1,5 @@
 *.db
+*.csv
+.mypy_cache/
 .venv/
+.python-version
