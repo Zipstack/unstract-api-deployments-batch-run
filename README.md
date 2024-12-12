@@ -59,6 +59,8 @@ This will display detailed usage information.
 - `-t`, `--api_timeout`: Timeout (in seconds) for API requests (default: 10).
 - `-i`, `--poll_interval`: Interval (in seconds) between API status polls (default: 5).
 - `-p`, `--parallel_call_count`: Number of parallel API calls (default: 10).
+- `--csv_report`: Path to export the detailed report as a CSV file.
+- `--db_path`: Path where the SQlite DB file is stored (default: './file_processing.db')
 - `--retry_failed`: Retry processing of failed files.
 - `--retry_pending`: Retry processing of pending files by making new requests.
 - `--skip_pending`: Skip processing of pending files.
@@ -67,7 +69,6 @@ This will display detailed usage information.
 - `--print_report`: Print a detailed report of all processed files at the end.
 - `--exclude_metadata`: Exclude metadata on tokens consumed and the context passed to LLMs for prompt studio exported tools in the result for each file.
 - `--no_verify`: Disable SSL certificate verification. (By default, SSL verification is enabled.)
-- `--csv_report`: Path to export the detailed report as a CSV file.
 
 ## Usage Examples
 
