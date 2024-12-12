@@ -502,14 +502,14 @@ def load_folder(args: Arguments):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Process files using the API.")
+    parser = argparse.ArgumentParser(description="Process files using Unstract's API deployment")
     parser.add_argument(
         "-e",
         "--api_endpoint",
         dest="api_endpoint",
         type=str,
         required=True,
-        help="API Endpoint to use for processing the files.",
+        help="API Endpoint to use for processing the files",
     )
     parser.add_argument(
         "-k",
@@ -525,7 +525,7 @@ def main():
         dest="api_timeout",
         type=int,
         default=10,
-        help="Time in seconds to wait before switching to async mode.",
+        help="Time in seconds to wait before switching to async mode (default: 10)",
     )
     parser.add_argument(
         "-i",
@@ -533,7 +533,7 @@ def main():
         dest="poll_interval",
         type=int,
         default=5,
-        help="Time in seconds the process will sleep between polls in async mode.",
+        help="Time in seconds the process will sleep between polls in async mode (default: 5)",
     )
     parser.add_argument(
         "-f",
@@ -541,7 +541,7 @@ def main():
         dest="input_folder_path",
         type=str,
         required=True,
-        help="Path where the files to process are present.",
+        help="Path where the files to process are present",
     )
     parser.add_argument(
         "-p",
@@ -549,14 +549,14 @@ def main():
         dest="parallel_call_count",
         type=int,
         default=5,
-        help="Number of calls to be made in parallel.",
+        help="Number of calls to be made in parallel (default: 5)",
     )
     parser.add_argument(
         "--db_path",
         dest="db_path",
         type=str,
         default="file_processing.db",
-        help="Path where the SQlite DB file is stored, defaults to './file_processing.db'",
+        help="Path where the SQlite DB file is stored (default: './file_processing.db)'",
     )
     parser.add_argument(
         '--csv_report',
@@ -568,25 +568,25 @@ def main():
         "--retry_failed",
         dest="retry_failed",
         action="store_true",
-        help="Retry processing of failed files.",
+        help="Retry processing of failed files (default: True)",
     )
     parser.add_argument(
         "--retry_pending",
         dest="retry_pending",
         action="store_true",
-        help="Retry processing of pending files as new request (Without this it will try to fetch the results using status API).",
+        help="Retry processing of pending files as new request (Without this it will try to fetch the results using status API) (default: True)",
     )
     parser.add_argument(
         "--skip_pending",
         dest="skip_pending",
         action="store_true",
-        help="Skip processing of pending files (Over rides --retry-pending).",
+        help="Skip processing of pending files (overrides --retry-pending) (default: True)",
     )
     parser.add_argument(
         "--skip_unprocessed",
         dest="skip_unprocessed",
         action="store_true",
-        help="Skip unprocessed files while retry processing of failed files.",
+        help="Skip unprocessed files while retry processing of failed files (default: True)",
     )
     parser.add_argument(
         "--log_level",
@@ -600,19 +600,19 @@ def main():
         "--print_report",
         dest="print_report",
         action="store_true",
-        help="Print a detailed report of all file processed.",
+        help="Print a detailed report of all file processed (default: True)",
     )
     parser.add_argument(
         "--exclude_metadata",
         dest="include_metadata",
         action="store_false",
-        help="Exclude metadata on tokens consumed and the context passed to LLMs for prompt studio exported tools in the result for each file.",
+        help="Exclude metadata on tokens consumed and the context passed to LLMs for prompt studio exported tools in the result for each file (default: False)",
     )
     parser.add_argument(
         "--no_verify",
         dest="verify",
         action="store_false",
-        help="Disable SSL certificate verification.",
+        help="Disable SSL certificate verification (default: False)",
     )
 
     args = Arguments(**vars(parser.parse_args()))
