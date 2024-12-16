@@ -1,6 +1,6 @@
 # File Processing Script
 
-This script processes files in a specified directory using an API, logs results in a local SQLite database, and provides options for retrying failed or pending files. It includes features for skipping specific files, generating reports, and running multiple API calls in parallel.
+This script processes files recursively from a specified directory using an API, logs results in a local SQLite database, and provides options for retrying failed or pending files. It includes features for skipping specific files, generating reports, and running multiple API calls in parallel.
 
 ## Features
 
@@ -61,6 +61,7 @@ This will display detailed usage information.
 - `-p`, `--parallel_call_count`: Number of parallel API calls (default: 10).
 - `--csv_report`: Path to export the detailed report as a CSV file.
 - `--db_path`: Path where the SQlite DB file is stored (default: './file_processing.db')
+- `--recursive`: Recursively identify and process files from the input folder path (default: False)
 - `--retry_failed`: Retry processing of failed files.
 - `--retry_pending`: Retry processing of pending files by making new requests.
 - `--skip_pending`: Skip processing of pending files.

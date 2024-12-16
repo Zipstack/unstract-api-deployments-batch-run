@@ -29,6 +29,7 @@ class Arguments:
     input_folder_path: str = ""
     db_path: str = ""
     parallel_call_count: int = 5
+    recurse_input_folder: bool = False
     retry_failed: bool = False
     retry_pending: bool = False
     skip_pending: bool = False
@@ -463,11 +464,15 @@ def process_file(
 
 
 def load_folder(args: Arguments):
-    files = [
-        os.path.join(args.input_folder_path, f)
-        for f in os.listdir(args.input_folder_path)
-        if os.path.isfile(os.path.join(args.input_folder_path, f))
-    ]
+    files = []
+    for root, _, filenames in os.walk(args.input_folder_path):
+        for f in filenames:
+            file_path = os.path.join(root, f)
+            if os.path.isfile(file_path):
+                files.append(file_path)
+        if not args.recurse_input_folder:
+            break
+    logger.debug(f"Loaded '{len(files)}' files from '{args.input_folder_path}': {files}")
 
     with Manager() as manager, Pool(args.parallel_call_count) as executor:
         success_count = manager.Value("i", 0)  # Shared integer for success count
@@ -499,6 +504,24 @@ def load_folder(args: Arguments):
             logger.debug("Got an update")
 
         pbar.close()
+
+
+def api_deployment_batch_run(args: Arguments):
+    logger.warning(f"Running with params: {args}")
+    init_db(args=args)  # Initialize DB
+
+    load_folder(args=args)
+
+    print_summary(args=args)  # Print summary at the end
+    if args.print_report:
+        print_report(args=args)
+        logger.warning(
+            "Elapsed time calculation of a file which was resumed"
+            " from pending state will not be correct"
+        )
+    
+    if args.csv_report:
+        export_report_to_csv(args=args)
 
 
 def main():
@@ -565,6 +588,12 @@ def main():
         help='Path to export the detailed report as a CSV file',
     )
     parser.add_argument(
+        "--recursive",
+        dest="recurse_input_folder",
+        action="store_true",
+        help="Recursively identify and process files from the input folder path (default: False)",
+    )
+    parser.add_argument(
         "--retry_failed",
         dest="retry_failed",
         action="store_true",
@@ -625,22 +654,7 @@ def main():
     ch.setFormatter(formatter)
     logging.basicConfig(level=args.log_level, handlers=[ch])
 
-    logger.warning(f"Running with params: {args}")
-
-    init_db(args=args)  # Initialize DB
-
-    load_folder(args=args)
-
-    print_summary(args=args)  # Print summary at the end
-    if args.print_report:
-        print_report(args=args)
-        logger.warning(
-            "Elapsed time calculation of a file which was resumed"
-            " from pending state will not be correct"
-        )
-    
-    if args.csv_report:
-        export_report_to_csv(args=args)
+    api_deployment_batch_run(args=args)
 
 
 if __name__ == "__main__":
